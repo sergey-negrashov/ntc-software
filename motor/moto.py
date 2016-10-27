@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 Notes:
 
@@ -19,28 +21,46 @@ of prior location.
 """
 
 import serial
-
+import time
 class moto:
     def __init__(self):
-        self.ser = serial.Serial('/dev/tty.usbserial-AL009FIC')
+        self.ser = serial.Serial('/dev/ttyUSB0')
     def moveUp(self, numSteps):
         cmd = 'C E I1M' + str(numSteps) + ',R'
         self.ser.write(cmd)
+        while True:
+            time.sleep(0.1)
+            if self.ser.read() == "^":
+                break
     def zero(self):
         self.ser.write('C E I1M-0, R')
+        while True:
+            time.sleep(0.1)
+            if self.ser.read() == "^":
+                break
+
     def absmove(self, pos):
         cmd = 'C E IA1M' + str(pos) + ',R'
         self.ser.write(cmd)
+        while True:
+            time.sleep(0.1)
+            if self.ser.read() == "^":
+                break
+
     def paus(self, time):
         cmd = 'C E P' + str(time) + ',R'
         self.ser.write(cmd)
+        while True:
+            time.sleep(0.1)
+            if self.ser.read() == "^":
+                break
+
     def loop(self, sec, steps, loops):
         cmd = 'C E P' + str(sec*10) + ',I1M' + str(steps) + ',L' + str(loops) + ',R'
         self.ser.write(cmd)
+        while True:
+            time.sleep(0.1)
+            if self.ser.read() == "^":
+                break
 
 
-a = moto()
-
-a.zero()
-a.loop(20,20,5)
-a.zero()
