@@ -18,6 +18,9 @@ a.absmove(21):
 moves stage an +21 steps away from absolute zero regardless
 of prior location.
 
+Encoding as bytes is necessary. 
+self.ser.write(bytes(cmd, 'utf-8'))
+
 """
 
 import serial
@@ -62,5 +65,5 @@ class moto:
             time.sleep(0.1)
             if self.ser.read() == "^":
                 break
-
+        self.ser.write(bytes(cmd, 'utf-8'))
 
