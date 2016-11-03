@@ -91,16 +91,13 @@ int main(int argc, char **argv) {
     /* use following line to turn on the internal 100 MHz clock connected to all channels  */
     b->EnableTcal(1);
     /* use following lines to enable hardware trigger on CH1 at 50 mV positive edge */
-    if (b->GetBoardType() >= 8) {        // Evaluaiton Board V4&5
-        b->EnableTrigger(1, 0);           // enable hardware trigger
-        b->SetTriggerSource(1 << 0);        // set CH1 as source
-    } else if (b->GetBoardType() == 7) { // Evaluation Board V3
-        b->EnableTrigger(0, 1);           // lemo off, analog trigger on
-        b->SetTriggerSource(0);           // use CH1 as source
-    }
-    b->SetTriggerLevel(0.01);            // 0.05 V
+    b->EnableTrigger(1,0);
+    b->SetTranspMode(0);
+    b->SetTriggerLevel(-0.01);            // 0.05 V
     b->SetTriggerPolarity(false);        // positive edge
+    b->SetTriggerSource(1<<0);
 
+    b->EnableTcal(0);
     /* use following lines to set individual trigger elvels */
     //b->SetIndividualTriggerLevel(1, 0.1);
     //b->SetIndividualTriggerLevel(2, 0.2);
@@ -108,7 +105,7 @@ int main(int argc, char **argv) {
     //b->SetIndividualTriggerLevel(4, 0.4);
     //b->SetTriggerSource(15);
 
-    b->SetTriggerDelayNs(0);             // zero ns trigger delay
+    b->SetTriggerDelayNs(50);             // zero ns trigger delay
 
     /* use following lines to enable the external trigger */
     //if (b->GetBoardType() == 8) {     // Evaluaiton Board V4
