@@ -13,5 +13,5 @@ while position < 120000 :
     m.moveUp(4000)
     position += 4000
     print count
-    #sleep(2)
+    sleep(5)
 
