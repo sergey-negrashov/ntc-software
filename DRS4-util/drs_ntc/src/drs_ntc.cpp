@@ -153,14 +153,14 @@ int main(int argc, char **argv) {
 
         for (int chan = 0; chan< 4; chan++) {
             //Event num
-            fprintf(f, "#%d ", event);
+            fprintf(f, "%d ", event);
             //Print the board id
-            fprintf(f, "#%d ", board_id);
+            fprintf(f, "%d ", board_id);
             //print channel
-            fprintf(f, "#%d ", chan);
-            fprintf(f, "#%d ", b->GetTriggerCell(0));
-            fprintf(f, "#%s ", argv[2]);
-            fprintf(f, "#%d ", 0);
+            fprintf(f, "%d ", chan);
+            fprintf(f, "%d ", b->GetTriggerCell(0));
+            fprintf(f, "%s ", argv[2]);
+            fprintf(f, "%d ", 0);
             for (int cell = 0; cell < 1024; cell++)
                 fprintf(f, "%7.1f ", wave_array[chan][cell]);
             fprintf(f,"\n");
