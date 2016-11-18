@@ -162,7 +162,7 @@ int main(int argc, char **argv) {
             fprintf(f, "#%s ", argv[2]);
             fprintf(f, "#%d ", 0);
             for (int cell = 0; cell < 1024; cell++)
-                fprintf(f, "%7.1f ", wave_array[0][cell]);
+                fprintf(f, "%7.1f ", wave_array[chan][cell]);
             fprintf(f,"\n");
         }
         /* print some progress indication */
