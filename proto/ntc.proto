@@ -1,0 +1,19 @@
+syntax = "proto3";
+package ntc.net;
+//option cpp_namespace = "ntc.net";
+message Channel {
+	int32 channel = 1;
+	int32 boardId = 2;
+	repeated float voltage = 3;
+	repeated float time = 4;
+}
+
+message Event {
+	int32 eventId = 1;
+	repeated Channel channel= 2;
+}
+
+message MotorPosition {
+	int32 motorPos = 1;
+	repeated Event events = 2;
+}
