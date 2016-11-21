@@ -93,11 +93,18 @@ int main(int argc, char **argv) {
     /* use following line to turn on the internal 100 MHz clock connected to all channels  */
     b->EnableTcal(1);
     /* use following lines to enable hardware trigger on CH1 at 50 mV positive edge */
-    b->EnableTrigger(1,0);
-    b->SetTranspMode(0);
-    b->SetTriggerLevel(-0.01);            // 0.05 V
-    b->SetTriggerPolarity(false);        // positive edge
-    b->SetTriggerSource(1<<0);
+//    b->EnableTrigger(1,0);
+//    b->SetTranspMode(0);
+//    b->SetTriggerLevel(-0.01);            // 0.05 V
+//    b->SetTriggerPolarity(false);        // positive edge
+//    b->SetTriggerSource(1<<0);
+    /* use following lines to enable the external trigger */
+    if (b->GetBoardType() == 8) {     // Evaluaiton Board V4
+        b->EnableTrigger(1, 0);           // enable hardware trigger
+        b->SetTriggerSource(1<<4);        // set external trigger as source
+    } else {                          // Evaluation Board V3
+        b->EnableTrigger(1, 0);           // lemo on, analog trigger off
+    }
 
     b->EnableTcal(0);
 
