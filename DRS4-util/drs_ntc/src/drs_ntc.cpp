@@ -36,8 +36,11 @@
 #include "strlcpy.h"
 #include "DRS.h"
 #include <iostream>
+#include "ZmqPub.hpp"
+#include "ProtoSerializer.hpp"
 
 #include <ctime>
+
 
 using namespace std;
 
@@ -49,7 +52,7 @@ int main(int argc, char **argv) {
     int nBoards;
     DRS *drs;
     DRSBoard *b;
-    float time_array[4][1024];
+    //float time_array[4][1024];
     float wave_array[4][1024];
     FILE *f;
 
@@ -93,29 +96,40 @@ int main(int argc, char **argv) {
     /* use following line to turn on the internal 100 MHz clock connected to all channels  */
     b->EnableTcal(1);
     /* use following lines to enable hardware trigger on CH1 at 50 mV positive edge */
+    /*
     b->EnableTrigger(1,0);
     b->SetTranspMode(0);
     b->SetTriggerLevel(-0.01);            // 0.05 V
     b->SetTriggerPolarity(false);        // positive edge
     b->SetTriggerSource(1<<0);
+    */
+
+    /* use following lines to enable the external trigger */
+    if (b->GetBoardType() == 8) {     // Evaluaiton Board V4
+        b->EnableTrigger(1, 0);           // enable hardware trigger
+        b->SetTriggerSource(1<<4);        // set external trigger as source
+    } else {                          // Evaluation Board V3
+        b->EnableTrigger(1, 0);           // lemo on, analog trigger off
+    }
+    printf("type %d\n", b->GetBoardType());
 
     b->EnableTcal(0);
 
     b->SetTriggerDelayNs(50);             // zero ns trigger delay
 
-
-    std::time_t now = std::time(NULL);
-    std::tm *ptm = std::localtime(&now);
-    char buffer[32];
     string name = argv[1];
     f = fopen(name.c_str(), "a");
+
     if (f == NULL) {
         perror("ERROR: Cannot open file \"data.txt\"");
         return 1;
     }
 
+    ZmqPub net("tcp://127.0.0.1:5530");
+    ProtoMotorPosition p(std::stoi(argv[2]));
     for (int event = 0; event < 1000; event++) {
-
+        b->EnableTrigger(1, 0);           // enable hardware trigger
+        b->SetTriggerSource(1<<4);        // set external trigger as source
         /* start board (activate domino wave) */
         b->StartDomino();
 
@@ -129,7 +143,7 @@ int main(int argc, char **argv) {
         b->TransferWaves(0, 8);
 
         /* read time (X) array of first channel in ns */
-        b->GetTime(0, 0, b->GetTriggerCell(0), time_array[0]);
+       // b->GetTime(0, 0, b->GetTriggerCell(0), time_array[0]);
 
         /* decode waveform (Y) array of first channel in mV */
         b->GetWave(0, 0, wave_array[0]);
@@ -138,19 +152,19 @@ int main(int argc, char **argv) {
          Note: On the evaluation board input #1 is connected to channel 0 and 1 of
          the DRS chip, input #2 is connected to channel 2 and 3 and so on. So to
          get the input #2 we have to read DRS channel #2, not #1. */
-        b->GetTime(0, 2, b->GetTriggerCell(0), time_array[1]);
+        //b->GetTime(0, 2, b->GetTriggerCell(0), time_array[1]);
 
         /* decode waveform (Y) array of second channel in mV */
         b->GetWave(0, 2, wave_array[1]);
 
-        b->GetTime(0, 4, b->GetTriggerCell(0), time_array[2]);
+        //b->GetTime(0, 4, b->GetTriggerCell(0), time_array[2]);
         /* decode waveform (Y) array of second channel in mV */
         b->GetWave(0, 4, wave_array[2]);
 
-        b->GetTime(0, 6, b->GetTriggerCell(0), time_array[3]);
+        //b->GetTime(0, 6, b->GetTriggerCell(0), time_array[3]);
         /* decode waveform (Y) array of second channel in mV */
         b->GetWave(0, 6, wave_array[3]);
-
+        p.addEvent(b, event);
         for (int chan = 0; chan< 4; chan++) {
             //Event num
             fprintf(f, "%d ", event);
@@ -160,18 +174,18 @@ int main(int argc, char **argv) {
             fprintf(f, "%d ", chan);
             fprintf(f, "%d ", b->GetTriggerCell(0));
             fprintf(f, "%s ", argv[2]);
-            fprintf(f, "%d ", 0);
+            fprintf(f, "%d\n", 0);
             for (int cell = 0; cell < 1024; cell++)
-                fprintf(f, "%7.1f ", wave_array[chan][cell]);
+                fprintf(f, "%.1f ", wave_array[chan][cell]);
             fprintf(f,"\n");
         }
         /* print some progress indication */
         printf("\033[2J\033[1;1H");
         printf("Event #%d read successfully\n", event);
+
     }
-
+    net.sendData(p);
     fclose(f);
-
     /* delete DRS object -> close USB connection */
     delete drs;
 }

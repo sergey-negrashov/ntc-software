@@ -31,7 +31,7 @@ fir_coef = [0.005836310228843312,
 def get_rid_of_random_god_damn_spikes(voltages_in):
     voltages = voltages_in[:]
     for i in range(1, len(voltages) - 1):
-        if math.fabs(voltages_in[i] - voltages_in[i - 1]) > 3 and math.fabs(voltages_in[i + 1] - voltages_in[i]) > 3:
+        if math.fabs(voltages_in[i] - voltages_in[i - 1]) > 2 and math.fabs(voltages_in[i + 1] - voltages_in[i]) > 2:
             voltages[i] = voltages[i - 1]
     return voltages
 
@@ -65,6 +65,11 @@ def process_file(f):
         
         for line in data:
             if line[0] == '#':
+                uv1 = voltages1[100:]
+                ut1 = times1[100:]
+                uv2 = voltages2[100:]
+                ut2 = times2[100:]
+                
                 voltages1 = get_rid_of_random_god_damn_spikes(voltages1)
                 voltages1 = np.interp(actual_times, times1, voltages1)
                 voltages1 = lfilter(fir_coef, 1.0, voltages1).tolist()
@@ -82,10 +87,19 @@ def process_file(f):
                 
                 tdr1,max1 =  pulse_50_percent_time(voltages1, times1)
                 tdr2,max2 =  pulse_50_percent_time(voltages2, times2)    
-                if not tdr1 == -1 and not tdr2 == -1:
+                if not tdr1 == -1 and not tdr2 == -1 and math.fabs(tdr2 - tdr1) < 10:
                     difference.append(tdr2 - tdr1)
                     maxes1.append(max1)
                     maxes2.append(max2)
+                if not tdr1 == -1 and not tdr2 == -1 and math.fabs(tdr2 - tdr1) > 50:
+                    line1, line2 = plt.plot(times2, voltages2, ut2, uv2);
+                    plt.title("Pathology")
+                    plt.xlabel("Time(ns)")
+                    plt.ylabel("Voltage(V)")
+                    line1.set_label("filtered")
+                    line2.set_label("unfiltered")
+                    plt.legend()
+                    plt.show()
                 times1 = []
                 times2 = []
                 voltages1 = []
@@ -100,7 +114,7 @@ def process_file(f):
         plt.ylabel('Hits')
         plt.xlabel('Time Difference')
         plt.title('Distribution for position ' +  str(int(f[25:-4])/4000) + 'cm')
-        plt.savefig('../gif/pos' + str(int(f[25:-4])/4000) + '.png')
+        #plt.savefig('../gif/pos' + str(int(f[25:-4])/4000) + '.png')
         plt.close()
         #dif_time.append(np.mean(difference))
         #pos.append(float(f[25:-4])/4000.0)
@@ -111,7 +125,7 @@ def process_file(f):
         print a
 
 files = sorted(os.listdir("."))
-pool = Pool(processes=8) 
+pool = Pool(processes=1) 
 multiple_results = map(lambda f: pool.apply_async(process_file, (f,)), files)
 results =  [res.get() for res in multiple_results]
 pos = []

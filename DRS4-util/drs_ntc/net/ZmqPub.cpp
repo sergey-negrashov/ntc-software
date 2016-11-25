@@ -5,7 +5,7 @@
 #include "ZmqPub.hpp"
 #include "zhelpers.hpp"
 ZmqPub::ZmqPub(std::string server){
-    _context = new zmq::context_t(0);
+    _context = new zmq::context_t(1);
     _publisher = new zmq::socket_t(*_context, ZMQ_PUB);
     _publisher->connect(server);
 }

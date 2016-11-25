@@ -4,14 +4,14 @@ from subprocess import call
 m = moto()
 position = 0
 #m.zero()
-m.moveUp(-1000000)
+#m.moveUp(-4000*1)
 count  = 0
-while position < 120000 :
+while position < 360000:
     count+=1
-    if (not count == 3) or (not count == 3):
-        call(["/usr/local/bin/drs_ntc", "%d" % position])
+    if (not count == 20) or (not count == 19):
+        call(["/usr/local/bin/drs_ntc", "motordata.glen", "%d" % position])
     m.moveUp(4000)
     position += 4000
     print count
-    sleep(5)
+    #sleep(5)
 
