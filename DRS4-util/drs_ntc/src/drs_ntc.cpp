@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
 //    b->SetTranspMode(0);
 //    b->SetTriggerLevel(-0.01);            // 0.05 V
 //    b->SetTriggerPolarity(false);        // positive edge
-//    b->SetTriggerSource(1<<0);
+
     /* use following lines to enable the external trigger */
     if (b->GetBoardType() == 8) {     // Evaluaiton Board V4
         b->EnableTrigger(1, 0);           // enable hardware trigger
@@ -122,7 +122,8 @@ int main(int argc, char **argv) {
     }
 
     for (int event = 0; event < 1000; event++) {
-
+	b->EnableTrigger(1, 0);
+	b->SetTriggerSource(1<<4);
         /* start board (activate domino wave) */
         b->StartDomino();
 
