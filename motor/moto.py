@@ -27,7 +27,7 @@ import serial
 import time
 class moto:
     def __init__(self):
-        self.ser = serial.Serial('/dev/ttyUSB0')
+        self.ser = serial.Serial('/dev/ttyUSB1')
     def moveUp(self, numSteps):
         cmd = 'C E I1M' + str(numSteps) + ',R'
         self.ser.write(cmd)

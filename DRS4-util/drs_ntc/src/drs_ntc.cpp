@@ -30,17 +30,15 @@
 #endif
 
 #include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 
-#include "strlcpy.h"
 #include "DRS.h"
 #include <iostream>
 #include "ZmqPub.hpp"
 #include "ProtoSerializer.hpp"
-
-#include <ctime>
-
+#include "motor.hpp"
+#include <chrono>
+#include <thread>
+#include <newt.h>
 
 using namespace std;
 
@@ -48,7 +46,8 @@ using namespace std;
 
 int main(int argc, char **argv) {
 
-    if (argc != 3) return -1;
+    Motor m;
+    if (argc < 2) return -1;
     int nBoards;
     DRS *drs;
     DRSBoard *b;
@@ -78,6 +77,10 @@ int main(int argc, char **argv) {
 
     //Get board id
     int board_id = b->GetBoardSerialNumber();
+
+    newtInit();
+
+
     /* initialize board */
     b->Init();
 
@@ -111,81 +114,87 @@ int main(int argc, char **argv) {
     } else {                          // Evaluation Board V3
         b->EnableTrigger(1, 0);           // lemo on, analog trigger off
     }
-    printf("type %d\n", b->GetBoardType());
 
     b->EnableTcal(0);
 
-    b->SetTriggerDelayNs(50);             // zero ns trigger delay
+    b->SetTriggerDelayNs(150);             // zero ns trigger delay
 
     string name = argv[1];
     f = fopen(name.c_str(), "a");
 
     if (f == NULL) {
-        perror("ERROR: Cannot open file \"data.txt\"");
+        perror(("ERROR: Cannot open file \""+ name +"\"").c_str());
         return 1;
     }
 
     ZmqPub net("tcp://127.0.0.1:5530");
-    ProtoMotorPosition p(std::stoi(argv[2]));
-    for (int event = 0; event < 1000; event++) {
-        b->EnableTrigger(1, 0);           // enable hardware trigger
-        b->SetTriggerSource(1<<4);        // set external trigger as source
-        /* start board (activate domino wave) */
-        b->StartDomino();
+    newtCls();
+    newtDrawRootText(1, 1, "Reseting motor" );
+    m.moveUp(-4000*105);
+    int motorPosition = 0;
 
-        /* wait for trigger */
-        printf("Waiting for trigger...");
+    for(;motorPosition < 4000*75; motorPosition+=4000) {
+        newtCls();
+        ProtoMotorPosition p(motorPosition);
+        newtDrawRootText(1, 1, "Reading 1000 events");
+        newtDrawRootText(1, 3, ("Laser Position " + std::to_string(motorPosition / 4000)).c_str());
+        for (int event = 0; event < 1000; event++) {
+            b->EnableTrigger(1, 0);           // enable hardware trigger
+            b->SetTriggerSource(1 << 4);        // set external trigger as source
+            newtDrawRootText(1, 2, ("Event: " + to_string(event)).c_str());
+            // enable hardware trigger
+            b->SetTriggerSource(1 << 4);        // set external trigger as source
+            /* start board (activate domino wave) */
+            b->StartDomino();
 
-        fflush(stdout);
-        while (b->IsBusy());
+            while (b->IsBusy()) std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
-        /* read all waveforms */
-        b->TransferWaves(0, 8);
+            /* read all waveforms */
+            b->TransferWaves(0, 8);
 
-        /* read time (X) array of first channel in ns */
-       // b->GetTime(0, 0, b->GetTriggerCell(0), time_array[0]);
+            /* read time (X) array of first channel in ns */
+            // b->GetTime(0, 0, b->GetTriggerCell(0), time_array[0]);
 
-        /* decode waveform (Y) array of first channel in mV */
-        b->GetWave(0, 0, wave_array[0]);
+            /* decode waveform (Y) array of first channel in mV */
+            b->GetWave(0, 0, wave_array[0]);
 
-        /* read time (X) array of second channel in ns
-         Note: On the evaluation board input #1 is connected to channel 0 and 1 of
-         the DRS chip, input #2 is connected to channel 2 and 3 and so on. So to
-         get the input #2 we have to read DRS channel #2, not #1. */
-        //b->GetTime(0, 2, b->GetTriggerCell(0), time_array[1]);
+            /* read time (X) array of second channel in ns
+             Note: On the evaluation board input #1 is connected to channel 0 and 1 of
+             the DRS chip, input #2 is connected to channel 2 and 3 and so on. So to
+             get the input #2 we have to read DRS channel #2, not #1. */
+            //b->GetTime(0, 2, b->GetTriggerCell(0), time_array[1]);
 
-        /* decode waveform (Y) array of second channel in mV */
-        b->GetWave(0, 2, wave_array[1]);
+            /* decode waveform (Y) array of second channel in mV */
+            b->GetWave(0, 2, wave_array[1]);
 
-        //b->GetTime(0, 4, b->GetTriggerCell(0), time_array[2]);
-        /* decode waveform (Y) array of second channel in mV */
-        b->GetWave(0, 4, wave_array[2]);
+            //b->GetTime(0, 4, b->GetTriggerCell(0), time_array[2]);
+            /* decode waveform (Y) array of second channel in mV */
+            b->GetWave(0, 4, wave_array[2]);
 
-        //b->GetTime(0, 6, b->GetTriggerCell(0), time_array[3]);
-        /* decode waveform (Y) array of second channel in mV */
-        b->GetWave(0, 6, wave_array[3]);
-        p.addEvent(b, event);
-        for (int chan = 0; chan< 4; chan++) {
-            //Event num
-            fprintf(f, "%d ", event);
-            //Print the board id
-            fprintf(f, "%d ", board_id);
-            //print channel
-            fprintf(f, "%d ", chan);
-            fprintf(f, "%d ", b->GetTriggerCell(0));
-            fprintf(f, "%s ", argv[2]);
-            fprintf(f, "%d\n", 0);
-            for (int cell = 0; cell < 1024; cell++)
-                fprintf(f, "%.1f ", wave_array[chan][cell]);
-            fprintf(f,"\n");
+            //b->GetTime(0, 6, b->GetTriggerCell(0), time_array[3]);
+            /* decode waveform (Y) array of second channel in mV */
+            b->GetWave(0, 6, wave_array[3]);
+            p.addEvent(b, event);
+            for (int chan = 0; chan < 4; chan++) {
+                //Event num
+                fprintf(f, "%d ", event);
+                //Print the board id
+                fprintf(f, "%d ", board_id);
+                //print channel
+                fprintf(f, "%d ", chan);
+                fprintf(f, "%d ", b->GetTriggerCell(0));
+                fprintf(f, "%d ", motorPosition);
+                fprintf(f, "%d ", 0);
+                for (int cell = 0; cell < 1024; cell++)
+                    fprintf(f, "%.1f ", wave_array[chan][cell]);
+                fprintf(f, "\n");
+            }
+            newtRefresh();
         }
-        /* print some progress indication */
-        printf("\033[2J\033[1;1H");
-        printf("Event #%d read successfully\n", event);
-
+        m.moveUp(4000);
+        net.sendData(p);
     }
-    net.sendData(p);
     fclose(f);
-    /* delete DRS object -> close USB connection */
     delete drs;
+    newtFinished();
 }

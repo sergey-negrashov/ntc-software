@@ -26,7 +26,7 @@ set(SOURCE_FILES
         net/ZmqPub.cpp
         net/ZmqPub.hpp
         net/zmq.hpp
-        net/zmq_addon.hpp)
+        net/zmq_addon.hpp src/motor.cpp include/motor.hpp)
 
 add_executable(drs_ntc ${SOURCE_FILES})
 target_link_libraries (drs_ntc usb-1.0)
@@ -34,3 +34,4 @@ target_link_libraries (drs_ntc util)
 target_link_libraries (drs_ntc pthread)
 target_link_libraries (drs_ntc protobuf)
 target_link_libraries (drs_ntc zmq)
+target_link_libraries (drs_ntc newt)
