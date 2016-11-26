@@ -39,15 +39,26 @@
 #include <chrono>
 #include <thread>
 #include <newt.h>
-
+#include <csignal>
+#include <iostream>
 using namespace std;
 
 /*------------------------------------------------------------------*/
 
-int main(int argc, char **argv) {
+namespace
+{
+    volatile std::sig_atomic_t running;
+}
 
+void waiter()
+{
+    newtWaitForKey();
+    running = 0;
+}
+
+int main(int argc, char **argv) {
+    std::srand(std::time(0));
     Motor m;
-    if (argc < 2) return -1;
     int nBoards;
     DRS *drs;
     DRSBoard *b;
@@ -119,7 +130,10 @@ int main(int argc, char **argv) {
 
     b->SetTriggerDelayNs(150);             // zero ns trigger delay
 
-    string name = argv[1];
+    string name = "/dev/null";
+    if(argc > 1)
+        name = argv[1];
+
     f = fopen(name.c_str(), "a");
 
     if (f == NULL) {
@@ -130,18 +144,22 @@ int main(int argc, char **argv) {
     ZmqPub net("tcp://127.0.0.1:5530");
     newtCls();
     newtDrawRootText(1, 1, "Reseting motor" );
+    newtRefresh();
+
+    running = 1;
+    auto w  = std::thread(waiter);
     m.moveUp(-4000*105);
     int motorPosition = 0;
-
-    for(;motorPosition < 4000*75; motorPosition+=4000) {
+    while(running) {
         newtCls();
         ProtoMotorPosition p(motorPosition);
-        newtDrawRootText(1, 1, "Reading 1000 events");
-        newtDrawRootText(1, 3, ("Laser Position " + std::to_string(motorPosition / 4000)).c_str());
-        for (int event = 0; event < 1000; event++) {
+        newtDrawRootText(1, 1, "Acquiring           ");
+        newtDrawRootText(1, 2, "Reading 100 events             ");
+        newtDrawRootText(1, 4, ("Laser Position " + std::to_string(motorPosition / 4000) +"                  ").c_str());
+        for (int event = 0; event < 100; event++) {
             b->EnableTrigger(1, 0);           // enable hardware trigger
             b->SetTriggerSource(1 << 4);        // set external trigger as source
-            newtDrawRootText(1, 2, ("Event: " + to_string(event)).c_str());
+            newtDrawRootText(1, 3, ("Event: " + to_string(event) + "      ").c_str());
             // enable hardware trigger
             b->SetTriggerSource(1 << 4);        // set external trigger as source
             /* start board (activate domino wave) */
@@ -191,8 +209,17 @@ int main(int argc, char **argv) {
             }
             newtRefresh();
         }
-        m.moveUp(4000);
         net.sendData(p);
+        int newPos = std::rand()%(2*4000);
+        motorPosition += newPos;
+        if(motorPosition > 72*4000){
+            motorPosition = 0;
+            newPos = -1*motorPosition;
+        }
+        newtDrawRootText(1, 1, ("Moving to " + std::to_string(motorPosition)).c_str());
+        newtRefresh();
+        m.moveUp(newPos);
+        this_thread::sleep_for(std::chrono::milliseconds(5000));
     }
     fclose(f);
     delete drs;

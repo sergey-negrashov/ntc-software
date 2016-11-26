@@ -15,10 +15,11 @@ import os
 import random
 from matplotlib.backends import qt_compat
 from PyQt4 import QtGui, QtCore
-
 import numpy as np
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+
+from zmq_receiver import  ZmqReceiver
 
 progname = os.path.basename(sys.argv[0])
 progversion = "0.1"
@@ -49,15 +50,14 @@ class MplCanvas(FigureCanvas):
 
 
 class VoltageCanvas(MplCanvas):
+
+
     def __init__(self, *args, **kwargs):
         MplCanvas.__init__(self, *args, **kwargs)
         timer = QtCore.QTimer(self)
-        timer.timeout.connect(self.update_figure)
-        timer.start(1000)
         self.title = "Voltage"
-        self.v = [0]*1024
-        self.t = map(lambda x: x*0.2, range(0,1024))
-        self.need_update = True
+        self.v = [0]*974
+        self.t = map(lambda x: x*0.2, range(0,974))
 
     def set_title(self, title):
         self.title = title
@@ -65,25 +65,21 @@ class VoltageCanvas(MplCanvas):
     def compute_initial_figure(self):
         self.axes.plot([0, 0, 0, 0], [0, 0, 0, 0], 'r')
 
-    def update_figure(self):
-        if self.need_update:
-            self.axes.plot(self.t, self.v, 'r')
-            self.axes.set_title(self.title)
-            self.axes.set_xlabel("Time (ns)")
-            self.axes.set_ylabel("Voltage (mV)")
-            self.draw()
-            self.need_update = False
+    def update_figure(self, newSamples):
+        self.v = newSamples
+        self.t = map(lambda x: x*0.2, range(0,len(self.v)))
+        self.axes.plot(self.t, self.v, 'r')
+        self.axes.set_title(self.title)
+        self.axes.set_xlabel("Time (ns)")
+        self.axes.set_ylabel("Voltage (mV)")
+        self.draw()
 
 class HistCanvas(MplCanvas):
     def __init__(self, *args, **kwargs):
         MplCanvas.__init__(self, *args, **kwargs)
-        timer = QtCore.QTimer(self)
-        timer.timeout.connect(self.update_figure)
-        timer.start(1000)
         self.title = "Histogram"
         self.xlabel = "Voltage"
         self.dat = [0]*100
-        self.need_update = True
 
     def set_title(self, title):
         self.title = title
@@ -94,25 +90,20 @@ class HistCanvas(MplCanvas):
     def compute_initial_figure(self):
         self.axes.hist(range(0,100))
 
-    def update_figure(self):
-        if self.need_update:
-            self.axes.hist(self.dat)
-            self.axes.set_title(self.title)
-            self.axes.set_xlabel(self.xlabel)
-            self.axes.set_ylabel("Hits")
-            self.draw()
-            self.need_update = False
+    def update_figure(self, values):
+        self.dat  = values
+        self.axes.hist(self.dat)
+        self.axes.set_title(self.title)
+        self.axes.set_xlabel(self.xlabel)
+        self.axes.set_ylabel("Hits")
+        self.draw()
 
 class DiffCanvas(MplCanvas):
     def __init__(self, *args, **kwargs):
         MplCanvas.__init__(self, *args, **kwargs)
-        timer = QtCore.QTimer(self)
-        timer.timeout.connect(self.update_figure)
-        timer.start(1000)
         self.title = "Voltage"
         self.timeDifference = []
         self.position = []
-        self.need_update = True
 
     def set_title(self, title):
         self.title = title
@@ -120,14 +111,14 @@ class DiffCanvas(MplCanvas):
     def compute_initial_figure(self):
         self.axes.plot([0, 0, 0, 0], [0, 0, 0, 0], 'r*')
 
-    def update_figure(self):
-        if self.need_update:
-            self.axes.plot(self.position, self.timeDifference, 'r*')
-            self.axes.set_title(self.title)
-            self.axes.set_xlabel("Motor Position (cm)")
-            self.axes.set_ylabel("Time difference between arrivals(ns)")
-            self.draw()
-            self.need_update = False
+    def update_figure(self, new_diff, pos):
+        self.position.append(pos)
+        self.timeDifference.append(new_diff)
+        self.axes.plot(self.position, self.timeDifference, 'r*')
+        self.axes.set_title(self.title)
+        self.axes.set_xlabel("Motor Position (cm)")
+        self.axes.set_ylabel("Time difference between arrivals(ns)")
+        self.draw()
 
 
 class ApplicationWindow(QtGui.QMainWindow):
@@ -164,12 +155,23 @@ class ApplicationWindow(QtGui.QMainWindow):
         self.main_widget.setFocus()
         self.setCentralWidget(self.main_widget)
 
+        self.thread = QtCore.QThread()
+        self.zeromq_listener = ZmqReceiver()
+        self.zeromq_listener.moveToThread(self.thread)
+        self.thread.started.connect(self.zeromq_listener.loop)
 
+        self.zeromq_listener.v1_update.connect(self.v1.update_figure)
+        self.zeromq_listener.v2_update.connect(self.v2.update_figure)
+
+        self.zeromq_listener.h1_update.connect(self.h1.update_figure)
+        self.zeromq_listener.h2_update.connect(self.h2.update_figure)
+
+        self.zeromq_listener.ar_update.connect(self.diff.update_figure)
+        QtCore.QTimer.singleShot(0, self.thread.start)
+
+        self.setWindowTitle("nTC Calibration Monitor")
 
 qApp = QtGui.QApplication(sys.argv)
-
 aw = ApplicationWindow()
-aw.setWindowTitle("nTC Calibration Monitor")
 aw.show()
 sys.exit(qApp.exec_())
-#qApp.exec_()

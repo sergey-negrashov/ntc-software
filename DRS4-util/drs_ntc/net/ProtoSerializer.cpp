@@ -9,6 +9,8 @@ using namespace std;
 
 ProtoMotorPosition::ProtoMotorPosition(int position){
     _position = position;
+    _store = ntc::net::MotorPosition();
+    _store.set_motorpos(position);
 }
 
 void ProtoMotorPosition::addEvent(DRSBoard *b, int id) {
@@ -19,8 +21,8 @@ void ProtoMotorPosition::addEvent(DRSBoard *b, int id) {
     for(int i = 0; i < 4; i++) {
         ntc::net::Channel *c = e->add_channel();
         c->set_channel(i);
-        b->GetTime(0, 0, b->GetTriggerCell(0), time_array);
-        b->GetWave(0, 0, wave_array);
+        b->GetTime(0, i*2, b->GetTriggerCell(0), time_array);
+        b->GetWave(0, i*2, wave_array);
         for(int j = 0; j < 1024; j++) {
             c->add_time(time_array[j]);
             c->add_voltage(wave_array[j]);
