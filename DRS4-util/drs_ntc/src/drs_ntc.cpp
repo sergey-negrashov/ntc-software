@@ -57,6 +57,7 @@ void waiter()
 }
 
 int main(int argc, char **argv) {
+    int actualEventNumber = 1;
     std::srand(std::time(0));
     Motor m;
     int nBoards;
@@ -192,10 +193,10 @@ int main(int argc, char **argv) {
             //b->GetTime(0, 6, b->GetTriggerCell(0), time_array[3]);
             /* decode waveform (Y) array of second channel in mV */
             b->GetWave(0, 6, wave_array[3]);
-            p.addEvent(b, event);
+            p.addEvent(b, actualEventNumber);
             for (int chan = 0; chan < 4; chan++) {
                 //Event num
-                fprintf(f, "%d ", event);
+                fprintf(f, "%d ", actualEventNumber);
                 //Print the board id
                 fprintf(f, "%d ", board_id);
                 //print channel
@@ -207,6 +208,7 @@ int main(int argc, char **argv) {
                     fprintf(f, "%.1f ", wave_array[chan][cell]);
                 fprintf(f, "\n");
             }
+            actualEventNumber++;
             newtRefresh();
         }
         net.sendData(p);

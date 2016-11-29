@@ -16,9 +16,9 @@
 using namespace std;
 
 Motor::Motor() {
-    fd = open( "/dev/ttyUSB1", O_RDWR);
+    fd = open( "/dev/ttyUSB0", O_RDWR);
     if(fd < 0){
-        cout << "Could not open /dev/ttyUSB1" << endl;
+        cout << "Could not open /dev/ttyUSB0" << endl;
         exit(1);
     }
 }
