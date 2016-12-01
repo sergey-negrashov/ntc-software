@@ -41,7 +41,70 @@
 #include <newt.h>
 #include <csignal>
 #include <iostream>
+#include <vector>
+#include <fstream>
+#include <sstream>
+#include <algorithm>
+#include <functional>
+#include <cctype>
+#include <locale>
+
+
+
 using namespace std;
+
+// trim from start (in place)
+static inline void ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
+                                    std::not1(std::ptr_fun<int, int>(std::isspace))));
+}
+
+// trim from end (in place)
+static inline void rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(),
+                         std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+}
+
+// trim from both ends (in place)
+static inline void trim(std::string &s) {
+    ltrim(s);
+    rtrim(s);
+}
+
+// trim from start (copying)
+static inline std::string ltrimmed(std::string s) {
+    ltrim(s);
+    return s;
+}
+
+// trim from end (copying)
+static inline std::string rtrimmed(std::string s) {
+    rtrim(s);
+    return s;
+}
+
+// trim from both ends (copying)
+static inline std::string trimmed(std::string s) {
+    trim(s);
+    return s;
+}
+
+
+void split(const std::string &s, char delim, std::vector<std::string> &elems) {
+    std::stringstream ss;
+    ss.str(s);
+    std::string item;
+    while (std::getline(ss, item, delim)) {
+        elems.push_back(item);
+    }
+}
+
+
+std::vector<std::string> split(const std::string &s, char delim) {
+    std::vector<std::string> elems;
+    split(s, delim, elems);
+    return elems;
+}
 
 /*------------------------------------------------------------------*/
 
@@ -57,6 +120,38 @@ void waiter()
 }
 
 int main(int argc, char **argv) {
+    int stepsPerTurn = 4000;
+    int randomSteps = 0;
+    int eventsPerStep = 100;
+    int pauseAfterStep = 0;
+    ifstream settingsFile("run_config.cfg");
+    string line;
+    if (settingsFile.is_open())
+    {
+        cout << "Loading configuration from file" << endl;
+        while ( getline (settingsFile,line) )
+        {
+            auto items = split(line,':');
+            if(items.size() != 2)
+                continue;
+            trim(items[0]);
+            if(items[0] == "Steps")
+                stepsPerTurn = std::stoi(items[1]);
+            if(items[0] == "Random")
+                randomSteps = std::stoi(items[1]);
+            if(items[0] == "Events")
+                eventsPerStep = std::stoi(items[1]);
+            if(items[0] == "Pause")
+                pauseAfterStep = std::stoi(items[1]);
+
+        }
+        settingsFile.close();
+    }
+
+    cout << "Steps per Turn: " << stepsPerTurn << endl;
+    cout << "Events per Turn " << eventsPerStep << endl;
+    cout << "Random " << (randomSteps ? "No": "Yes") << endl;
+    cout << "Pause after move " << pauseAfterStep << "ms" << endl;
     int actualEventNumber = 1;
     std::srand(std::time(0));
     Motor m;
@@ -157,7 +252,7 @@ int main(int argc, char **argv) {
         newtDrawRootText(1, 1, "Acquiring           ");
         newtDrawRootText(1, 2, "Reading 100 events             ");
         newtDrawRootText(1, 4, ("Laser Position " + std::to_string(motorPosition / 4000) +"                  ").c_str());
-        for (int event = 0; event < 100; event++) {
+        for (int event = 0; event < eventsPerStep; event++) {
             b->EnableTrigger(1, 0);           // enable hardware trigger
             b->SetTriggerSource(1 << 4);        // set external trigger as source
             newtDrawRootText(1, 3, ("Event: " + to_string(event) + "      ").c_str());
@@ -192,6 +287,8 @@ int main(int argc, char **argv) {
 
             //b->GetTime(0, 6, b->GetTriggerCell(0), time_array[3]);
             /* decode waveform (Y) array of second channel in mV */
+
+
             b->GetWave(0, 6, wave_array[3]);
             p.addEvent(b, actualEventNumber);
             for (int chan = 0; chan < 4; chan++) {
@@ -204,6 +301,7 @@ int main(int argc, char **argv) {
                 fprintf(f, "%d ", b->GetTriggerCell(0));
                 fprintf(f, "%d ", motorPosition);
                 fprintf(f, "%d ", 0);
+                fprintf(f, "%.1f ", b->GetTemperature());
                 for (int cell = 0; cell < 1024; cell++)
                     fprintf(f, "%.1f ", wave_array[chan][cell]);
                 fprintf(f, "\n");
@@ -212,7 +310,11 @@ int main(int argc, char **argv) {
             newtRefresh();
         }
         net.sendData(p);
-        int newPos = std::rand()%(2*4000);
+        int newPos;
+        if (randomSteps)
+            newPos = std::rand()%(stepsPerTurn);
+        else
+            newPos = stepsPerTurn;
         motorPosition += newPos;
         if(motorPosition > 72*4000){
             motorPosition = 0;
@@ -221,7 +323,7 @@ int main(int argc, char **argv) {
         newtDrawRootText(1, 1, ("Moving to " + std::to_string(motorPosition)).c_str());
         newtRefresh();
         m.moveUp(newPos);
-        this_thread::sleep_for(std::chrono::milliseconds(5000));
+        this_thread::sleep_for(std::chrono::milliseconds(pauseAfterStep));
     }
     fclose(f);
     delete drs;

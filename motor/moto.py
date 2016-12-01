@@ -67,3 +67,7 @@ class moto:
                 break
         self.ser.write(bytes(cmd, 'utf-8'))
 
+
+a = moto()
+a.moveUp(10000)
+

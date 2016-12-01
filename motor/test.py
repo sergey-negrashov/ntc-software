@@ -16,6 +16,5 @@ class moto:
 
 
 a = moto()
-a.zero()
-a.loop(20,21,5)
+a.moveUp(10000)
 
