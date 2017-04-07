@@ -69,5 +69,4 @@ class moto:
 
 
 a = moto()
-a.moveUp(10000)
 

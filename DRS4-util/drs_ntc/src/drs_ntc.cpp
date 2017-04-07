@@ -124,6 +124,8 @@ int main(int argc, char **argv) {
     int randomSteps = 0;
     int eventsPerStep = 100;
     int pauseAfterStep = 0;
+    int moveMotor = 1;
+    int triggerType = 0; // 0 - laser trigger, 1 - software trigger, 2 - OR of 1/2, 3 - AND of 1/2
     ifstream settingsFile("run_config.cfg");
     string line;
     if (settingsFile.is_open())
@@ -143,6 +145,10 @@ int main(int argc, char **argv) {
                 eventsPerStep = std::stoi(items[1]);
             if(items[0] == "Pause")
                 pauseAfterStep = std::stoi(items[1]);
+            if(items[0] == "MoveMotor")
+                moveMotor = std::stoi(items[1]);
+            if(items[0] == "TriggerType")
+                triggerType = std::stoi(items[1]);
 
         }
         settingsFile.close();
@@ -152,6 +158,8 @@ int main(int argc, char **argv) {
     cout << "Events per Turn " << eventsPerStep << endl;
     cout << "Random " << (randomSteps ? "No": "Yes") << endl;
     cout << "Pause after move " << pauseAfterStep << "ms" << endl;
+    cout << "Moving motor? " << moveMotor << endl;
+    cout << "TriggerType: " << triggerType << endl;
     int actualEventNumber = 1;
     std::srand(std::time(0));
     Motor m;
@@ -203,28 +211,48 @@ int main(int argc, char **argv) {
     /* use following line to set range to 0..1V */
     //b->SetInputRange(0.5);
 
-    /* use following line to turn on the internal 100 MHz clock connected to all channels  */
-    b->EnableTcal(1);
-    /* use following lines to enable hardware trigger on CH1 at 50 mV positive edge */
-    /*
-    b->EnableTrigger(1,0);
-    b->SetTranspMode(0);
-    b->SetTriggerLevel(-0.01);            // 0.05 V
-    b->SetTriggerPolarity(false);        // positive edge
-    b->SetTriggerSource(1<<0);
-    */
-
-    /* use following lines to enable the external trigger */
-    if (b->GetBoardType() == 8) {     // Evaluaiton Board V4
-        b->EnableTrigger(1, 0);           // enable hardware trigger
-        b->SetTriggerSource(1<<4);        // set external trigger as source
-    } else {                          // Evaluation Board V3
-        b->EnableTrigger(1, 0);           // lemo on, analog trigger off
-    }
-
+    /* use following line to set the internal 100 MHz clock connected to all channels  */
     b->EnableTcal(0);
 
-    b->SetTriggerDelayNs(150);             // zero ns trigger delay
+    // Trigger types
+    // 0 - laser/external
+    // 1 - dark (software)
+    // 2 - OR of channels 1 and 2, standard thresholds set below
+    // 3 - AND of channels 1 and 2, stanard thresholds set below
+
+    switch(triggerType) {
+       case(0):
+          b->EnableTrigger(0, 0);           // enable hardware trigger
+          b->SetTriggerSource(1<<4);        // set external trigger as source
+          b->SetTriggerDelayNs(150);             // ns trigger delay
+          break; 
+       case(1):
+          b->EnableTrigger(0,0);
+          break;
+       case(2):
+          b->SetTranspMode(0);
+          b->EnableTrigger(1, 0);           // enable hardware trigger
+//          b->SetIndividualTriggerLevel(0,0.010);  //Standard setup - Serge
+//          b->SetIndividualTriggerLevel(1,0.01);   //               - Serge
+          b->SetIndividualTriggerLevel(0,-0.01);  //Tweaking triggers - Kurtis
+          b->SetIndividualTriggerLevel(1,-0.007); //                  - Kurtis
+          b->SetTriggerPolarity(false);        // positive edge //Standard setup
+          b->SetTriggerSource(1<<1 | 1<<0);    // ch 1 OR ch 2
+          b->SetTriggerDelayNs(50);             // ns trigger delay
+          break;
+       case(3):
+          b->SetTranspMode(0);
+          b->EnableTrigger(1, 0);           // enable hardware trigger
+          b->SetIndividualTriggerLevel(0,-0.010);
+          b->SetIndividualTriggerLevel(1,-0.007);
+          b->SetTriggerPolarity(false);        // positive edge
+          b->SetTriggerSource(1<<8 | 1<<9);    // ch 1 AND ch 2
+          b->SetTriggerDelayNs(50);             // ns trigger delay
+          break;
+       others:
+          cout << "ERROR: No valid trigger type set!" << endl;
+          return 1;
+    }
 
     string name = "/dev/null";
     if(argc > 1)
@@ -244,22 +272,30 @@ int main(int argc, char **argv) {
 
     running = 1;
     auto w  = std::thread(waiter);
-    m.moveUp(-4000*105);
+    if (moveMotor) {
+       m.moveUp(-105*4000); //Move to near the wall (SiPM #1)
+//    m.moveUp(288000);  //Do the top first, then this if you want to move to the end point of the scan first
+// If you do the above, adjust motorPosition accordingly.
+    }
     int motorPosition = 0;
     while(running) {
         newtCls();
         ProtoMotorPosition p(motorPosition);
         newtDrawRootText(1, 1, "Acquiring           ");
-        newtDrawRootText(1, 2, "Reading 100 events             ");
+        newtDrawRootText(1, 2, ("Reading " + std::to_string(eventsPerStep) + " events             ").c_str());
         newtDrawRootText(1, 4, ("Laser Position " + std::to_string(motorPosition / 4000) +"                  ").c_str());
         for (int event = 0; event < eventsPerStep; event++) {
-            b->EnableTrigger(1, 0);           // enable hardware trigger
-            b->SetTriggerSource(1 << 4);        // set external trigger as source
+            if (triggerType == 0) {
+               b->EnableTrigger(1, 0);           // enable hardware trigger
+               b->SetTriggerSource(1 << 4);        // set external trigger as source
+            }
             newtDrawRootText(1, 3, ("Event: " + to_string(event) + "      ").c_str());
-            // enable hardware trigger
-            b->SetTriggerSource(1 << 4);        // set external trigger as source
             /* start board (activate domino wave) */
             b->StartDomino();
+
+            if (triggerType == 1) {
+               b->SoftTrigger();
+            }
 
             while (b->IsBusy()) std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
@@ -315,17 +351,28 @@ int main(int argc, char **argv) {
             newPos = std::rand()%(stepsPerTurn);
         else
             newPos = stepsPerTurn;
-        motorPosition += newPos;
-        if(motorPosition > 72*4000){
+        if (moveMotor) {
+           motorPosition += newPos;
+        }
+
+        if(motorPosition > 76*4000+2000){
+        //if(motorPosition > 29*4000+2000){
+            break;
             motorPosition = 0;
             newPos = -1*motorPosition;
         }
+
         newtDrawRootText(1, 1, ("Moving to " + std::to_string(motorPosition)).c_str());
         newtRefresh();
-        m.moveUp(newPos);
+        if (moveMotor) {
+           m.moveUp(newPos);
+        }
         this_thread::sleep_for(std::chrono::milliseconds(pauseAfterStep));
     }
     fclose(f);
     delete drs;
     newtFinished();
+    if (moveMotor) {
+       m.moveUp(-105*4000); //Return motor to near the wall (SiPM #1)
+    }
 }
