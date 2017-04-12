@@ -34,8 +34,6 @@
 
 #include "DRS.h"
 #include <iostream>
-#include "ZmqPub.hpp"
-#include "ProtoSerializer.hpp"
 #include "motor.hpp"
 #include <chrono>
 #include <thread>
@@ -185,9 +183,11 @@ int main(int argc, char **argv) {
     slave = drs->GetBoard(1);
 
     //Get board id
-    int board_id = master->GetBoardSerialNumber();
-    if(board_id == 2675)
+    if(master->GetBoardSerialNumber() != 2675)
         std::swap(master, slave);
+
+    int boardid_master = master->GetBoardSerialNumber();
+    int boardid_slave = slave->GetBoardSerialNumber();
 
     newtInit();
 
@@ -266,8 +266,8 @@ int main(int argc, char **argv) {
 
     running = 1;
     auto w  = std::thread(waiter);
-    Motor m;
-    m.moveUp(-4000*105);
+    //Motor m;
+    //m.moveUp(-4000*105);
     int motorPosition = 0;
     while(running) {
         newtCls();
@@ -321,7 +321,7 @@ int main(int argc, char **argv) {
                 //Event num
                 fprintf(f, "%d ", actualEventNumber);
                 //Print the board id
-                fprintf(f, "%d ", board_id);
+                fprintf(f, "%d ", boardid_master);
                 //print channel
                 fprintf(f, "%d ", chan);
                 fprintf(f, "%d ", master->GetTriggerCell(0));
@@ -364,9 +364,9 @@ int main(int argc, char **argv) {
                 //Event num
                 fprintf(f, "%d ", actualEventNumber);
                 //Print the board id
-                fprintf(f, "%d ", board_id);
+                fprintf(f, "%d ", boardid_slave);
                 //print channel
-                fprintf(f, "%d ", chan + 3);
+                fprintf(f, "%d ", chan);
                 fprintf(f, "%d ", master->GetTriggerCell(0));
                 fprintf(f, "%d ", motorPosition);
                 fprintf(f, "%d ", 0);
@@ -393,7 +393,7 @@ int main(int argc, char **argv) {
         }
         newtDrawRootText(1, 1, ("Moving to " + std::to_string(motorPosition)).c_str());
         newtRefresh();
-        m.moveUp(newPos);
+        //m.moveUp(newPos);
         this_thread::sleep_for(std::chrono::milliseconds(pauseAfterStep));
     }
     fclose(f);

@@ -6,7 +6,8 @@ set(CMAKE_C_FLAGS "-O2 -fno-strict-aliasing -Iinclude -I/usr/local/include -DOS_
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/net)
-
+link_directories(/usr/local/lib)
+include_directories(/usr/local/include)
 set(SOURCE_FILES
         include/averager.h
         include/DRS.h
@@ -19,14 +20,8 @@ set(SOURCE_FILES
         src/musbstd.c
         src/mxml.c
         src/strlcpy.c
-        net/ProtoSerializer.cpp
-        net/ProtoSerializer.hpp
-        proto/ntc.pb.cc
-        proto/ntc.pb.h
-        net/ZmqPub.cpp
-        net/ZmqPub.hpp
-        net/zmq.hpp
-        net/zmq_addon.hpp src/motor.cpp include/motor.hpp)
+        src/motor.cpp 
+	include/motor.hpp)
 
 add_executable(drs_ntc ${SOURCE_FILES})
 target_link_libraries (drs_ntc usb-1.0)
