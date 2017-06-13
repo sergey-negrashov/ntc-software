@@ -1,0 +1,3 @@
+/home/tusk/vc/mtc-software/mTCctl3/readoutd2/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/tusk/vc/mtc-software/mTCctl3/readoutd2/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/tusk/vc/mtc-software/mTCctl3/readoutd2/cmake-build-debug/CMakeFiles/readoutd2.dir

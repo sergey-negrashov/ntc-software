@@ -1,0 +1,86 @@
+##GLOBASLS##
+
+#Storage
+storage.scrodEventBuffer : 120000
+storage.path : /data/
+
+#Monitoring web interface
+state.port : 5000
+
+#Port for all UDP data streams from SCRODS.
+data.port : 2000
+
+#Active interfaces.
+scrods : 0,1,2,3,4,5,6,7,8,9,10,11
+#scrods : 13
+
+#Port for all UDP register streams to SCRODS.
+register.port : 2001
+
+#Network control through python interface
+client.port : 10000
+
+#Monitoring for PSU and future flow meter
+monitor.mpodIp : 192.168.2.25
+
+monitor.pipIp : 192.168.3.25
+
+monitor.flowIp : 192.168.0.98
+
+##INTERFACES#
+#data.X.local : local ip address for  DATA channel of SCROD X.
+
+#register.X.local : local ip address for REGISTER access for SCROD X.
+#register.X.remote : ip address of the REGISTER channel for scrod X.
+
+data.13.local : 192.168.0.69
+register.13.local : 192.168.0.69
+register.13.remote : 192.168.0.69
+
+data.0.local : 10.0.1.3
+register.0.local : 10.0.1.3
+register.0.remote : 10.0.1.2
+
+data.1.local : 10.0.2.3
+register.1.local : 10.0.2.3
+register.1.remote : 10.0.2.2
+
+data.2.local : 10.0.3.3
+register.2.local : 10.0.3.3
+register.2.remote : 10.0.3.2
+
+data.3.local : 10.0.4.3
+register.3.local : 10.0.4.3
+register.3.remote : 10.0.4.2
+
+data.4.local : 10.0.5.3
+register.4.local : 10.0.5.3
+register.4.remote : 10.0.5.2
+
+data.5.local : 10.0.6.3
+register.5.local : 10.0.6.3
+register.5.remote : 10.0.6.2
+
+data.6.local : 10.0.7.3
+register.6.local : 10.0.7.3
+register.6.remote : 10.0.7.2
+
+data.7.local : 10.0.8.3
+register.7.local : 10.0.8.3
+register.7.remote : 10.0.8.2
+
+data.8.local : 10.0.9.3
+register.8.local : 10.0.9.3
+register.8.remote : 10.0.9.2
+
+data.9.local : 10.0.10.3
+register.9.local : 10.0.10.3
+register.9.remote : 10.0.10.2
+
+data.10.local : 10.0.11.3
+register.10.local : 10.0.11.3
+register.10.remote : 10.0.11.2
+
+data.11.local : 10.0.12.3
+register.11.local : 10.0.12.3
+register.11.remote : 10.0.12.2
