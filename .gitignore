@@ -5,7 +5,11 @@ __pycache__/
 
 # C extensions
 *.so
-
+*.o
+CMakeCache.txt
+cmake-build-debug
+.idea
+MakeFiles/
 # Distribution / packaging
 .Python
 env/

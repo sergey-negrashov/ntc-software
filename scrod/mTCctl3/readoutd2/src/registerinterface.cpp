@@ -455,15 +455,15 @@ void RegisterInterface::mainLoop() {
                                 break;
                             }
                             case ADVANCE_MOTOR: {
-                                int position_to_advance = c.card;
-                                m.moveUp(position_to_advance);
+                                int position_to_advance = c.arg;
                                 DspResponce resp;
                                 resp.address = 0;
                                 resp.ok = true;
-                                resp.card = s->getLastEventNumber();;
+                                resp.card = 0;
                                 resp.chan = 0;
-                                resp.arg = 0;
+                                resp.arg = s->getLastEventNumber();
                                 ::write(client, (char *) &resp, sizeof(DspResponce));
+				m.moveUp(position_to_advance);
                             }
                             default:
                                 throw std::runtime_error("Register : Bad command from clien");

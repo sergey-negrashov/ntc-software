@@ -208,7 +208,7 @@ class readoutdPython:
                                                c_uint16(scrod),
                                                c_uint8(channelStart),
                                                c_uint8(channelStop))
-        return
+        return        
 
     def liveCollectPacket(self, timeout = -1):
         length = c_int32()
@@ -221,6 +221,9 @@ class readoutdPython:
 
     def liveCollectLastLength(self):
         return self.lastLength
+
+	def advanceMotor(self, steps):
+		return self.lib.advanceMotor(self.net, steps)
 
 #Create a dictionary to link command line input to the actual functions more quickly than if statements?
 

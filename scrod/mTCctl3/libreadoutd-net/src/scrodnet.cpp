@@ -435,3 +435,7 @@ uint16_t ScrodNet::getTriggerARate() {return doOp(sock_, GET_TRG_A_RATE);}
 uint16_t ScrodNet::getTriggerBRate() {return doOp(sock_, GET_TRG_B_RATE);}
 uint16_t ScrodNet::getTriggerCRate() {return doOp(sock_, GET_TRG_C_RATE);}
 uint16_t ScrodNet::getTriggerABRate() {return doOp(sock_, GET_TRG_AB_RATE);}
+
+uint32_t ScrodNet::advanceMotor(int steps) {
+    return doOp(sock_,ADVANCE_MOTOR, steps);
+}
