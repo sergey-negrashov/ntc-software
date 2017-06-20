@@ -463,7 +463,7 @@ void RegisterInterface::mainLoop() {
                                 resp.chan = 0;
                                 resp.arg = s->getLastEventNumber();
                                 ::write(client, (char *) &resp, sizeof(DspResponce));
-				m.moveUp(position_to_advance);
+				                m.moveUp(position_to_advance);
                             }
                             default:
                                 throw std::runtime_error("Register : Bad command from clien");
