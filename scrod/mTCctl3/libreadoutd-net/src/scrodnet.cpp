@@ -242,6 +242,8 @@ uint16_t doOp(int sock, OPERRATION op, uint16_t data, uint16_t address, uint8_t 
     // DspResponce seen (another option would be to add a sequence number
     // to DspResponces, which would allow the client to detect when sync
     // is lost and try again under those conditions).
+    //This seems silly cause we are running this over TCP and everything is ordered
+    //-Serge
     ssize_t totalBytesRead = 0;
     ssize_t bytesRead = 0;
     ssize_t bytesRemaining = 0;
@@ -437,5 +439,5 @@ uint16_t ScrodNet::getTriggerCRate() {return doOp(sock_, GET_TRG_C_RATE);}
 uint16_t ScrodNet::getTriggerABRate() {return doOp(sock_, GET_TRG_AB_RATE);}
 
 uint32_t ScrodNet::advanceMotor(int steps) {
-    return doOp(sock_,ADVANCE_MOTOR, steps);
+    return doOp(sock_,ADVANCE_MOTOR, 0, 0, steps, 0);
 }

@@ -455,7 +455,7 @@ void RegisterInterface::mainLoop() {
                                 break;
                             }
                             case ADVANCE_MOTOR: {
-                                int position_to_advance = c.arg;
+                                int position_to_advance = c.card;
                                 DspResponce resp;
                                 resp.address = 0;
                                 resp.ok = true;
