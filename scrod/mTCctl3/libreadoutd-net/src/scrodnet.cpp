@@ -219,7 +219,7 @@ void ScrodNet::rotateStorage()
     doOp(sock_, STORAGE_ROTATE);
 }
 
-uint16_t doOp(int sock, OPERRATION op, uint16_t data, uint16_t address, uint8_t card, uint8_t chan)
+uint16_t doOp(int sock, OPERRATION op, uint16_t data, uint16_t address, int card, int chan)
 {
     DspCommand cmd;
     DspResponce rsp;
