@@ -35,7 +35,7 @@ static inline bool checkChecksum(uint32_t *packet, int size)
 }
 
 
-u_int16_t doOp(int sock, OPERRATION op, uint16_t data = 0, uint16_t address = 0, uint8_t card = 0, uint8_t chan = 0);
+u_int16_t doOp(int sock, OPERRATION op, uint16_t data = 0, uint16_t address = 0, int card = 0, int chan = 0);
 
 ScrodNet::ScrodNet(int port, std::string ip) throw(std::runtime_error)
 {
